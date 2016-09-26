@@ -117,14 +117,12 @@ def create_parser():
 
 def rabbitmq_request(config, url):
 
-    host = config.host[:-1]  if config.host.endswith('/')  else config.host 
-
     if url.startswith('/'):
         url = url[1:]
     
     try:
         r = requests.get(
-            'http://{}:{}/{}'.format(host, config.port, url),
+            'http://{}:{}/{}'.format(config.host, config.port, url),
             auth=(config.user, config.password),
         )
 
@@ -144,6 +142,15 @@ def rabbitmq_request(config, url):
         raise SensuChecksException(ERRORCODE_UNKNOWN, 'UNKNOWN: HTTP error occured, {}'.format(e))
     
     return result
+
+
+def parse_args(parser):
+    config = parser.parse_args()
+
+    if config.host.endswith('/'):
+        config.host = config.host[:-1]
+
+    return config
 
 
 def parse_overview_metrics(metrics_json):
@@ -337,7 +344,7 @@ def apply_checks(config, metrics):
 
 def main():
     parser = create_parser()
-    config = parser.parse_args()
+    config = parse_args(parser)
     
     try:
         metrics_json = rabbitmq_request(config, 'api/overview')

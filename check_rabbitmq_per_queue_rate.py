@@ -84,16 +84,14 @@ def create_parser():
     return parser
 
 
-def rabbitmq_request(config, url):
-
-    host = config.host[:-1]  if config.host.endswith('/')  else config.host 
+def rabbitmq_request(config, url): 
 
     if url.startswith('/'):
         url = url[1:]
     
     try:
         r = requests.get(
-            'http://{}:{}/{}'.format(host, config.port, url),
+            'http://{}:{}/{}'.format(config.host, config.port, url),
             auth=(config.user, config.password),
         )
 
@@ -246,6 +244,9 @@ def apply_checks(config, metrics):
 
 def parse_args(parser):
     config = parser.parse_args()
+
+    if config.host.endswith('/'):
+        config.host = config.host[:-1]
 
     argument_name = ''
     try:
