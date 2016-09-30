@@ -25,23 +25,61 @@
 # sudo permitions are required for the script
 # %USERNAME_HERE ALL=(ALL) NOPASSWD:/bin/kill -0 [0-9]*
 
-if [ $# -ne 1 ]; then
-    echo "UNKNOWN: illegal number of parameters. Usage: check_process_by_pidfile.sh /path/to/pidfile"
-    exit 3
+ERRORCODE_OK=0
+ERRORCODE_WARNING=1
+ERRORCODE_CRITICAL=2
+ERRORCODE_UNKNOWN=3
+
+PATH_PIDFILE=""
+
+function print_help {
+    cat<< EOF
+Usage: check_process_by_pidfile.sh -f /path/to/pidfile
+Checks process by sending kill -0
+Required sudo permitions are required for the script:
+%USERNAME_HERE ALL=(ALL) NOPASSWD:/bin/kill -0 [0-9]*
+
+LICENSE:
+    The MIT License (MIT)
+EOF
+}
+
+
+
+if [ "$#" -lt 2 ]; then
+    echo "UNKNOWN: illegal number of parameters"
+    print_help
+    exit ${ERRORCODE_UNKNOWN}
 fi
 
-if [ ! -f "$1" ]; then
-    echo "CRITICAL: file not found $1"
-    exit 2
+while getopts ":f:" opt; do
+  case $opt in
+    f)
+      PATH_PIDFILE="$OPTARG"
+      ;;
+    \?)
+      echo "UNKNOWN: Invalid option: -$OPTARG"
+      exit ${ERRORCODE_UNKNOWN}
+      ;;
+    :)
+      echo "UNKNOWN: Option -$OPTARG requires an argument."
+      exit ${ERRORCODE_UNKNOWN}
+      ;;
+  esac
+done
+
+if [ ! -f "${PATH_PIDFILE}" ]; then
+    echo "CRITICAL: file not found ${PATH_PIDFILE}"
+    exit ${ERRORCODE_CRITICAL}
 fi
 
-error_msg=$(sudo kill -0 $(cat $1) 2>&1)
+error_msg=$(sudo kill -0 $(cat ${PATH_PIDFILE}) 2>&1)
 
 if [ $? -ne 0 ]; then
     echo "CRITICAL: process is not running. Message: $error_msg"
-    exit 2
+    exit ${ERRORCODE_CRITICAL}
 fi
 
 echo "process is running"
-exit 0
+exit ${ERRORCODE_OK}
 
